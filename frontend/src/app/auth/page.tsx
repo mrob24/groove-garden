@@ -154,7 +154,14 @@ export default function Auth() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Algo salió mal'); return }
       localStorage.setItem('gg_token', data.token)
-      router.push('/')
+      if (mode === 'login') {
+      localStorage.setItem('gg_token', data.token)
+      localStorage.setItem('gg_user', JSON.stringify(data.user))
+      router.push('/player')  
+    } else {
+      setMode('login')
+      setForm({ name: '', email: '', password: '' })
+    }
     } catch {
       setError('No se pudo conectar al servidor. ¿Está corriendo el backend?')
     } finally {
