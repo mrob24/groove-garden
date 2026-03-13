@@ -2,10 +2,10 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import Navbar from '../components/Navbar'
-import ArtistCarousel from '../components/ArtistCarousel'
-import Blobs from '../components/Blobs'
-import Petals from '../components/Petals'
+import Navbar from '../../components/Navbar'
+import ArtistCarousel from '../../components/ArtistCarousel'
+import Blobs from '../../components/Blobs'
+import Petals from '../../components/Petals'
 
 // Hook que observa elementos y les agrega la clase 'revealed' al entrar en viewport
 function useReveal() {
@@ -51,7 +51,7 @@ export default function Landing() {
 
         .section-label {
           font-family: 'DM Sans', sans-serif;
-          font-size: 10px;
+          font-size: 12px;
           letter-spacing: 0.25em;
           text-transform: uppercase;
           color: #4ade80;
@@ -108,7 +108,7 @@ export default function Landing() {
 
         /* ── SCROLL ANIMATIONS ── */
 
-        /* Fade up — default */
+        /* Fade up; default */
         [data-reveal] {
           opacity: 0;
           transform: translateY(32px);
@@ -131,7 +131,7 @@ export default function Landing() {
           transform: scale(0.94) translateY(20px);
         }
 
-        /* Revealed state — same for all */
+        /* Revealed state; same for all */
         [data-reveal].revealed {
           opacity: 1;
           transform: translateY(0) translateX(0) scale(1);
@@ -192,19 +192,25 @@ export default function Landing() {
         <section className="relative flex flex-col items-center justify-center text-center min-h-screen pt-32 px-12 overflow-hidden">
           <Blobs />
           <div className="relative z-10 w-full flex flex-col items-center">
-            <p className="hero-label section-label mb-8 tracking-[0.35em]">A new kind of music platform</p>
+            <p className="hero-label section-label mb-8 text-4xl tracking-[0.35em]">A new kind of music platform</p>
             <h1 className="hero-title display font-light text-[clamp(64px,8vw,112px)] leading-[1.0] mb-8 max-w-[1100px] mx-auto"
               style={{ letterSpacing: '-0.02em' }}>
               The <em className="italic" style={{ color: '#4ade80' }}>garden</em> where<br />
               music <em className="italic">flourishes</em>
             </h1>
             <div className="hero-divider divider mb-8" style={{ height: '1px' }} />
-            <p className="hero-body text-[15px] text-[#7a9e7d] leading-[1.9] max-w-[560px] mx-auto font-light tracking-wide">
+            <p className="hero-body text-[15px] text-[#a3c8a5] leading-[1.9] max-w-[560px] mx-auto font-light tracking-wide">
               Groove Garden is a space where artists are nurtured, not overlooked.
-              Music cultivated with intention — supported by community, given the
+              Music cultivated with intention; supported by community, given the
               tools it needs to truly flourish.
             </p>
-            <div className="hero-carousel mt-14 w-full">
+            <button onClick={() => router.push('/auth')}
+              className="glow-btn mt-10 px-14 py-4 rounded-full text-[11px] tracking-[0.2em] uppercase font-medium cursor-pointer border border-[rgba(74,222,128,0.25)] text-[#a3c8a5] hover:text-[#f0f7f0] hover:border-[rgba(74,222,128,0.5)] transition-all"
+              style={{ background: 'rgba(18,32,22,0.5)', backdropFilter: 'blur(8px)' }}
+            >
+              Get started
+            </button>
+            <div className="hero-carousel mt-10 w-full">
               <ArtistCarousel />
             </div>
           </div>
@@ -217,35 +223,35 @@ export default function Landing() {
           <div className="max-w-[1200px] mx-auto grid grid-cols-2 gap-24 items-start">
 
             <div data-reveal="left">
-              <p className="section-label mb-6">Our manifesto</p>
+              <p className="section-label mb-6 text-[13px] tracking-[0.35em]">Our manifesto</p>
               <h2 className="display font-light text-[clamp(42px,4.5vw,64px)] leading-[1.1] mb-8"
                 style={{ letterSpacing: '-0.02em' }}>
                 <span className="green-text italic">Artists</span> are{' '}
-                <em className="italic">not</em><br />
+                <em className="italic green-text">not</em><br />
                 disposable content
               </h2>
-              <p className="text-[13px] text-[#7a9e7d] leading-[2] font-light max-w-[400px]">
+              <p className="text-[15px] text-[#a3c8a5] leading-[2] font-light max-w-[400px]">
                 Traditional streaming platforms reduce music to passive consumption.
-                Groove Garden was built to change that — every stream has meaning,
+                Groove Garden was built to change that; every stream has meaning,
                 every artist is valued, and every listen plays a role in the ecosystem.
               </p>
-              <p className="text-[13px] text-[#7a9e7d] leading-[2] font-light max-w-[400px] mt-4">
+              <p className="text-[15px] text-[#a3c8a5] leading-[2] font-light max-w-[400px] mt-4">
                 We are not chasing volume. We are creating the ballroom between artists
-                and listeners — a garden where community helps determine what truly flourishes.
+                and listeners; a garden where community helps determine what truly flourishes.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-12">
               {[
                 { big: '70%', desc: 'Of every subscription goes directly to the artists you support. No hidden intermediaries.' },
-                { title: 'Sustainable Growth', desc: 'We reward artists — not viral spikes or disposable content.' },
+                { title: 'Sustainable Growth', desc: 'We reward artists; not viral spikes or disposable content.' },
                 { title: 'Direct Support', desc: 'Choose exactly which artists your subscription empowers.' },
                 { title: 'Transparent', desc: 'Clear revenue distribution. No black boxes. No manipulation.' },
               ].map((s, i) => (
                 <div key={i} data-reveal="scale" data-delay={String(i + 1)} className="stat-card rounded-2xl p-7">
                   {s.big && <span className="display block font-light text-[56px] leading-none mb-3 green-text">{s.big}</span>}
                   {s.title && <h3 className="display font-semibold text-[20px] leading-tight mb-3 text-[#e8f5e8]">{s.title}</h3>}
-                  <p className="text-[11px] text-[#5a7a5d] leading-relaxed font-light tracking-wide">{s.desc}</p>
+                  <p className="text-[11px] text-[#7a9e7d] leading-relaxed font-light tracking-wide">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -260,15 +266,15 @@ export default function Landing() {
           <div className="max-w-[1200px] mx-auto grid grid-cols-2 gap-24 items-center relative z-10">
 
             <div data-reveal="left">
-              <p className="section-label mb-6">How it works</p>
+              <p className="section-label mb-6 text-[13px] tracking-[0.35em]">How it works</p>
               <h2 className="display font-light text-[clamp(42px,4.5vw,64px)] leading-[1.05] mb-8"
                 style={{ letterSpacing: '-0.02em' }}>
                 A <em className="italic green-text">place</em><br />
                 where music<br />
                 <em className="italic">grows</em> with you
               </h2>
-              <p className="text-[13px] text-[#7a9e7d] leading-[2] font-light">
-                Not just streaming — an ecosystem. Your attention has weight.
+              <p className="text-[13px] text-[#a3c8a5] leading-[2] font-light">
+                Not just streaming; an ecosystem. Your attention has weight.
                 Artists are seeds. Every listen helps something real grow.
               </p>
             </div>
@@ -276,14 +282,14 @@ export default function Landing() {
             <div className="flex flex-col gap-4">
               {[
                 { num: '01', title: 'Your experience has value.', body: 'Discover new artists, listen to songs you like from our human-curated playlists. The music you save has an impact and a weight.' },
-                { num: '02', title: 'Your money, directly to your artists.', body: 'Choose to pay per song or subscribe monthly. Either way, 70% goes straight to the artist — no intermediaries, no black boxes.' },
+                { num: '02', title: 'Your money, directly to your artists.', body: 'Choose to pay per song or subscribe monthly. Either way, 70% goes straight to the artist; no intermediaries, no black boxes.' },
                 { num: '03', title: 'See what you love grow.', body: 'Track the impact of your support in real time. See how your listens and contributions help artists reach new audiences.' },
               ].map((s, i) => (
                 <div key={s.num} data-reveal data-delay={String(i + 1)} className="step-card rounded-2xl p-6 flex gap-6">
                   <span className="display font-light text-[28px] text-[#4ade80] min-w-[48px] opacity-60">{s.num}</span>
                   <div>
                     <h3 className="display font-semibold text-[17px] mb-2 text-[#e8f5e8]">{s.title}</h3>
-                    <p className="text-[12px] text-[#5a7a5d] leading-relaxed font-light">{s.body}</p>
+                    <p className="text-[12px] text-[#7a9e7d] leading-relaxed font-light">{s.body}</p>
                   </div>
                 </div>
               ))}
@@ -297,7 +303,7 @@ export default function Landing() {
         <section id="pricing" className="relative px-16 py-28">
           <div className="max-w-[1200px] mx-auto">
             <div data-reveal>
-              <p className="section-label mb-6">Pricing</p>
+              <p className="section-label mb-6 text-[13px] tracking-[0.35em]">Pricing</p>
               <h2 className="display font-light text-[clamp(42px,4.5vw,64px)] mb-16"
                 style={{ letterSpacing: '-0.02em' }}>
                 Two ways to <em className="italic green-text">help</em>
@@ -313,23 +319,23 @@ export default function Landing() {
                 <h3 className="display font-light text-[36px] mb-3 leading-tight">
                   <span className="green-text italic">Pay</span> per song
                 </h3>
-                <p className="text-[12px] text-[#5a7a5d] leading-relaxed pb-8 mb-8 border-b border-[rgba(74,222,128,0.08)] font-light">
+                <p className="text-[12px] text-[#7a9e7d] leading-relaxed pb-8 mb-8 border-b border-[rgba(74,222,128,0.08)] font-light">
                   No subscription. Pay for the music you like and support artists directly.
                 </p>
                 <h4 className="display font-light text-[26px] leading-tight mb-5 text-[#e8f5e8]">
                   Pay <em className="italic green-text">only</em><br />for what you want.
                 </h4>
-                <p className="text-[12px] text-[#5a7a5d] leading-relaxed mb-6 font-light">
+                <p className="text-[12px] text-[#7a9e7d] leading-relaxed mb-6 font-light">
                   No subscription model. Just a small, transparent price per song.
                   Buy what you love, own it forever.
                 </p>
                 {[
-                  { title: 'How are you supporting artists?', body: 'Every song costs $0.99, then $0.69 goes straight to them — 70%. The remaining $0.30 sustains the platform.' },
+                  { title: 'How are you supporting artists?', body: 'Every song costs $0.99, then $0.69 goes straight to them; 70%. The remaining $0.30 sustains the platform.' },
                   { title: 'What do you get?', body: 'Once you buy it, it is yours forever. No DRM. No expiration. High-quality audio, yours to keep offline.' },
                 ].map(item => (
                   <div key={item.title} className="stat-card rounded-xl p-4 mb-3">
                     <strong className="block text-[12px] text-[#c8dfc8] mb-1.5 font-medium">{item.title}</strong>
-                    <p className="text-[11px] text-[#5a7a5d] leading-relaxed font-light">{item.body}</p>
+                    <p className="text-[11px] text-[#7a9e7d] leading-relaxed font-light">{item.body}</p>
                   </div>
                 ))}
                 <button onClick={() => router.push('/auth')}
@@ -345,20 +351,19 @@ export default function Landing() {
                 <h3 className="display font-light text-[36px] mb-3 leading-tight">
                   <span className="green-text italic">Smart</span> subscription
                 </h3>
-                <p className="text-[12px] text-[#5a7a5d] leading-relaxed pb-8 mb-8 border-b border-[rgba(74,222,128,0.08)] font-light">
+                <p className="text-[12px] text-[#7a9e7d] leading-relaxed pb-8 mb-8 border-b border-[rgba(74,222,128,0.08)] font-light">
                   The best way to support artists you like, based on how much you listen.
                 </p>
                 {[
-                  { label: 'Listener buys', sub: '1 Song', amount: '$0.99' },
-                  { label: 'The artist gets', sub: '70%', amount: '$0.69' },
-                  { label: 'Platform infrastructure', sub: '30%', amount: '$0.30' },
-                ].map(({ label, sub, amount }) => (
+                  { label: 'Listener gets', sub: 'Smart subscription' },
+                  { label: 'Money gets divided', sub: 'Based on who you listen to the most'},
+                  { label: 'And the listener supports the artist directly', sub: 'No intermediaries, no black boxes'},
+                ].map(({ label, sub }) => (
                   <div key={label} className="stat-card flex items-center gap-4 rounded-xl px-5 py-4 mb-2">
                     <div className="flex-1">
                       <div className="text-[12px] text-[#a3b8a5] font-light">{label}</div>
                       <div className="text-[10px] text-[#4a6a4d] mt-0.5 tracking-wide uppercase">{sub}</div>
                     </div>
-                    <div className="display font-semibold text-[18px] text-[#e8f5e8]">{amount}</div>
                   </div>
                 ))}
                 <div className="flex justify-center my-8">
