@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json()
@@ -9,30 +8,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email y contraseña requeridos' }, { status: 400 })
   }
 
-  // Fetch user from users table
-  const { data: user, error: fetchError } = await supabase
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+  if (error) {
+    return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
+  }
+
+  // Traer datos del usuario incluyendo artist_id si existe
+  const { data: userData } = await supabase
     .from('users')
-    .select('*')
-    .eq('email', email)
+    .select('id, username, email, plan_type')
+    .eq('auth_id', data.user.id)
     .single()
 
-  if (fetchError || !user || !user.password_hash) {
-    return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
-  }
-
-  // Compare password with hash
-  const valid = await bcrypt.compare(password, user.password_hash)
-  if (!valid) {
-    return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
-  }
+  // Buscar si el usuario es artista
+  const { data: artistData } = await supabase
+    .from('artists')
+    .select('id')
+    .eq('user_id', userData?.id)
+    .single()
 
   return NextResponse.json({
-    token: 'authenticated', // Dummy token since we're not using Supabase auth
+    token: data.session?.access_token,
     user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      plan_type: user.plan_type
+      ...userData,
+      artist_id: artistData?.id || null
     }
   }, { status: 200 })
 }

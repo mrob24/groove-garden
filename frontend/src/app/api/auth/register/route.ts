@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
   const { name, email, password } = await req.json()
@@ -21,24 +20,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 
-  // Hash the password
-  const hashedPassword = await bcrypt.hash(password, 10)
+  // Esperar un momento para que el trigger cree el usuario
+  await new Promise(resolve => setTimeout(resolve, 500))
 
-  // Insert into users table
-  const { error: insertError } = await supabase
+  // Traer el usuario de public.users
+  const { data: userData } = await supabase
     .from('users')
-    .insert({
-      auth_id: data.user?.id,
-      email,
-      username: name,
-      password_hash: hashedPassword,
-      plan_type: 'free' // or default
-    })
+    .select('id, username, email, plan_type')
+    .eq('auth_id', data.user?.id)
+    .single()
 
-  if (insertError) {
-    console.error('Error inserting user:', insertError)
-    return NextResponse.json({ error: 'Error creando usuario' }, { status: 500 })
-  }
-
-  return NextResponse.json({ token: data.session?.access_token }, { status: 201 })
+  return NextResponse.json({
+    token: data.session?.access_token,
+    user: { ...userData, artist_id: null }
+  }, { status: 201 })
 }
