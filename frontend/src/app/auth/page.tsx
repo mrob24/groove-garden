@@ -2,7 +2,7 @@
 
 import { useState, ChangeEvent, KeyboardEvent, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Blobs from "../../../components/Blobs";
+import Blobs from "../../components/Blobs";
 
 function MouseGlow({
   containerRef,

@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
       duration_seconds,
       audio_url,
       is_featured,
+      lyrics,
+      lyrics_type,
       albums (
         cover_url,
         title
@@ -33,6 +35,8 @@ export async function GET(req: NextRequest) {
     url: track.audio_url || '',
     cover_url: track.albums?.cover_url || null,
     is_featured: track.is_featured || false,
+    lyrics: track.lyrics || null,
+    lyrics_type: track.lyrics_type || 'plain',
   }))
 
   return NextResponse.json({ tracks }, { status: 200 })
