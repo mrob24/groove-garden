@@ -397,8 +397,17 @@ export default function Player() {
     return () => { audio.removeEventListener('timeupdate', onTime); audio.removeEventListener('durationchange', onDuration); audio.removeEventListener('ended', onEnded) }
   }, [currentTrack, tracks, queue, isRepeat, isShuffle, userId, listenStart])
 
+  // Mantenemos la reproducción en segundo plano (pestaña minimizada o aplicación minimizada)
+  // No pausamos en visibilitychange, para que siga sonando incluso al ocultar la ventana.
   useEffect(() => {
-    const onVis = () => { if (!audioRef.current) return; if (document.hidden) audioRef.current.pause(); else if (isPlaying) audioRef.current.play().catch(() => {}) }
+    const onVis = () => {
+      if (!audioRef.current) return
+      if (document.hidden) {
+        // No detener el audio al estar oculto.
+        return
+      }
+      if (isPlaying) audioRef.current.play().catch(() => {})
+    }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [isPlaying])
