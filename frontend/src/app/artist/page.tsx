@@ -34,6 +34,7 @@ interface ArtistProfile {
 interface Stats {
   total_plays: number; total_likes: number; avg_completion: number
   monthly_listeners?: number; revenue?: number; weekly_growth?: number
+  monthly_listeners_growth?: number; likes_growth?: number
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -427,14 +428,9 @@ export default function ArtistStudio() {
     ])
     if (tR.ok && aR.ok && sR.ok) {
       const [tD, aD, sD] = await Promise.all([tR.json(), aR.json(), sR.json()])
-      setTracks((tD.tracks || []).map((t: Track) => ({ ...t, play_count: Math.floor(Math.random() * 5000), like_count: Math.floor(Math.random() * 500) })))
+      setTracks(tD.tracks || [])
       setAlbums(aD.albums || [])
-      setStats({
-        ...sD,
-        monthly_listeners: Math.floor(Math.random() * 5000 + 100),
-        revenue: Math.floor(Math.random() * 1000 + 50),
-        weekly_growth: Math.floor(Math.random() * 20 + 1)
-      })
+      setStats(sD)
     }
     if (pR.data) {
       setProfile(pR.data)
@@ -658,10 +654,10 @@ export default function ArtistStudio() {
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: 'Total Plays', value: totalPlays.toLocaleString(), icon: Play, color: '#3dba6f', change: `+${stats?.weekly_growth || 12}%` },
-                    { label: 'Monthly Listeners', value: (stats?.monthly_listeners || 0).toLocaleString(), icon: Users, color: '#8ab89a', change: '+8%' },
-                    { label: 'Likes', value: (stats?.total_likes || 0).toLocaleString(), icon: Heart, color: '#e85d5d', change: '+5%' },
-                    { label: 'Revenue', value: `$${(stats?.revenue || 0).toLocaleString()}`, icon: DollarSign, color: '#3dba6f', change: '+15%' },
+                    { label: 'Total Plays', value: totalPlays.toLocaleString(), icon: Play, color: '#3dba6f', change: `+${stats?.weekly_growth || 0}%` },
+                    { label: 'Monthly Listeners', value: (stats?.monthly_listeners || 0).toLocaleString(), icon: Users, color: '#8ab89a', change: `+${stats?.monthly_listeners_growth || 0}%` },
+                    { label: 'Likes', value: (stats?.total_likes || 0).toLocaleString(), icon: Heart, color: '#e85d5d', change: `+${stats?.likes_growth || 0}%` },
+                    { label: 'Revenue', value: `$${(stats?.revenue || 0).toLocaleString()}`, icon: DollarSign, color: '#3dba6f', change: '+0%' },
                   ].map(stat => (
                     <div key={stat.label} className={`${t.card} p-4`}>
                       <div className="flex items-center justify-between mb-2">
@@ -1083,10 +1079,10 @@ export default function ArtistStudio() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: 'Total Plays', value: stats.total_plays.toLocaleString(), icon: Play, change: '+12%' },
-                    { label: 'Monthly Listeners', value: (stats.monthly_listeners || 0).toLocaleString(), icon: Users, change: '+8%' },
-                    { label: 'Likes', value: stats.total_likes.toLocaleString(), icon: Heart, change: '+5%' },
-                    { label: 'Revenue', value: `$${(stats.revenue || 0).toLocaleString()}`, icon: DollarSign, change: '+15%' },
+                    { label: 'Total Plays', value: stats.total_plays.toLocaleString(), icon: Play, change: `+${stats.weekly_growth || 0}%` },
+                    { label: 'Monthly Listeners', value: (stats.monthly_listeners || 0).toLocaleString(), icon: Users, change: `+${stats.monthly_listeners_growth || 0}%` },
+                    { label: 'Likes', value: stats.total_likes.toLocaleString(), icon: Heart, change: `+${stats.likes_growth || 0}%` },
+                    { label: 'Revenue', value: `$${(stats.revenue || 0).toLocaleString()}`, icon: DollarSign, change: '+0%' },
                   ].map(stat => (
                     <div key={stat.label} className={`${t.card} p-4`}>
                       <div className="flex items-center justify-between mb-2">

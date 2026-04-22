@@ -44,6 +44,13 @@ interface Playlist {
   tracks: Track[]
 }
 
+interface Stats {
+  totalPlayTime: number
+  topGenre: string
+  listeningStreak: number
+  totalArtists: number
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 const fmt = (t: number) => {
@@ -613,6 +620,12 @@ export default function Player() {
   const [newPlaylistName, setNewPlaylistName] = useState("")
   const [creatingPlaylist, setCreatingPlaylist] = useState(false)
   const [gardenTab, setGardenTab] = useState<"liked" | "playlists">("liked")
+  const [stats, setStats] = useState<Stats>({
+    totalPlayTime: 0,
+    topGenre: 'None',
+    listeningStreak: 0,
+    totalArtists: 0
+  })
 
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -632,14 +645,6 @@ export default function Player() {
         (t.album || "").toLowerCase().includes(q)
     )
   }, [searchQuery, tracks])
-
-  // Mock stats for profile
-  const stats = useMemo(() => ({
-    totalPlayTime: Math.floor(Math.random() * 1000 + 100),
-    topGenre: "Indie Folk",
-    listeningStreak: Math.floor(Math.random() * 30 + 1),
-    totalArtists: new Set(tracks.map(t => t.artist)).size
-  }), [tracks])
 
   // ─── Effects ─────────────────────────────────────────────────────────
 
@@ -675,6 +680,23 @@ export default function Player() {
     fetch(`/api/likes?user_id=${userId}`)
       .then((r) => r.json())
       .then((d) => d.likedTrackIds && setLikedTracks(new Set(d.likedTrackIds)))
+      .catch(console.error)
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
+    fetch(`/api/user/stats?user_id=${userId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.error) {
+          setStats({
+            totalPlayTime: d.totalPlayTime || 0,
+            topGenre: d.topGenre || 'Various',
+            listeningStreak: d.listeningStreak || 0,
+            totalArtists: d.totalArtists || 0
+          })
+        }
+      })
       .catch(console.error)
   }, [userId])
 

@@ -63,11 +63,54 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from('tracks')
-    .select('id, title, duration_seconds, audio_url, price, created_at, lyrics, lyrics_type, albums(title)')
+    .select('id, title, duration_seconds, audio_url, price, created_at, lyrics, lyrics_type, albums(title, cover_url)')
     .eq('artist_id', artist_id)
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ tracks: data }, { status: 200 })
+  // Get all track IDs
+  const trackIds = data.map((t: any) => t.id)
+
+  // Fetch play counts from listen_events
+  const { data: listenData } = await supabase
+    .from('listen_events')
+    .select('track_id')
+    .in('track_id', trackIds)
+
+  // Fetch like counts from library
+  const { data: likeData } = await supabase
+    .from('library')
+    .select('track_id')
+    .in('track_id', trackIds)
+
+  // Count plays per track
+  const playCounts: Record<string, number> = {}
+  listenData?.forEach((l: any) => {
+    playCounts[l.track_id] = (playCounts[l.track_id] || 0) + 1
+  })
+
+  // Count likes per track
+  const likeCounts: Record<string, number> = {}
+  likeData?.forEach((l: any) => {
+    likeCounts[l.track_id] = (likeCounts[l.track_id] || 0) + 1
+  })
+
+  // Enrich tracks with counts
+  const tracks = data.map((track: any) => ({
+    id: track.id,
+    title: track.title,
+    duration_seconds: track.duration_seconds,
+    audio_url: track.audio_url,
+    price: track.price,
+    cover_url: track.albums?.cover_url || null,
+    lyrics: track.lyrics || null,
+    lyrics_type: track.lyrics_type || 'plain',
+    album: track.albums?.title || null,
+    created_at: track.created_at,
+    play_count: playCounts[track.id] || 0,
+    like_count: likeCounts[track.id] || 0
+  }))
+
+  return NextResponse.json({ tracks }, { status: 200 })
 }
