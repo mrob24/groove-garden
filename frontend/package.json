@@ -16,6 +16,7 @@
     "@stripe/stripe-js": "^8.9.0",
     "@supabase/supabase-js": "^2.99.1",
     "bcryptjs": "^3.0.3",
+    "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
@@ -50,8 +51,14 @@
       "package.json",
       "next.config.*"
     ],
-    "win": { "target": "nsis" },
-    "mac": { "target": "dmg" },
-    "linux": { "target": "AppImage" }
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
