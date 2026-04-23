@@ -71,6 +71,48 @@ const formatDate = (dateString?: string) => {
   return `Joined ${date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
 }
 
+// Mock lyrics generator (replace with real API call)
+const fetchLyrics = async (track: Track): Promise<string> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 100))
+  // Dummy lyrics based on track title
+  return `${track.title} by ${track.artist}
+
+[Verse 1]
+Walking through the garden late at night
+Feeling every beat under moonlight
+The rhythm flows like water through the trees
+A melody that brings me to my knees
+
+[Chorus]
+Oh, groove garden, take me higher
+Set my soul on gentle fire
+Every note a blooming flower
+Music is my superpower
+
+[Verse 2]
+Shadows dance and sync with every sound
+Lost and found on hallowed ground
+The bassline whispers secrets in the dark
+Igniting every single spark
+
+[Chorus]
+Oh, groove garden, take me higher
+Set my soul on gentle fire
+Every note a blooming flower
+Music is my superpower
+
+[Bridge]
+And when the world gets cold and gray
+I press play and drift away
+The garden grows inside my heart
+A work of living, breathing art
+
+[Outro]
+Groove garden... forever green
+The sweetest place I've ever been.`
+}
+
 // ─── Sub‑components ───────────────────────────────────────────────────
 
 function WaveBars({ playing }: { playing: boolean }) {
@@ -106,8 +148,6 @@ function SkeletonCard() {
   )
 }
 
-// ─── Context Menu (unchanged) ─────────────────────────────────────────
-
 function ContextMenu({
   x, y, track, playlists, onPlay, onAddToQueue, onLike, isLiked, onAddToPlaylist, onClose
 }: {
@@ -123,10 +163,14 @@ function ContextMenu({
     return () => window.removeEventListener("click", handler)
   }, [onClose])
 
+  // Prevent menu from going off-screen
+  const adjustedX = Math.min(x, window.innerWidth - 200)
+  const adjustedY = Math.min(y, window.innerHeight - 300)
+
   return (
     <div
       className="fixed z-[100] bg-[#0f1f14] border border-[#3dba6f]/18 rounded-xl shadow-2xl py-1.5 min-w-[180px]"
-      style={{ left: x, top: y }}
+      style={{ left: adjustedX, top: adjustedY }}
       onClick={(e) => e.stopPropagation()}
     >
       {[
@@ -177,8 +221,6 @@ function ContextMenu({
     </div>
   )
 }
-
-// ─── Track Card (compact for denser grids) ────────────────────────────
 
 function TrackCard({
   track, onPlay, onLike, onAddToQueue, onAddToPlaylist, isLiked, isActive, playlists
@@ -256,8 +298,6 @@ function TrackCard({
   )
 }
 
-// ─── Track Row (unchanged) ────────────────────────────────────────────
-
 function TrackRow({
   track, index, onPlay, onLike, onAddToQueue, onAddToPlaylist, isLiked, isActive, playlists
 }: {
@@ -326,8 +366,6 @@ function TrackRow({
   )
 }
 
-// ─── Playlist Card (larger for better visibility) ─────────────────────
-
 function PlaylistCard({ playlist, onClick, onDelete }: {
   playlist: Playlist; onClick: () => void; onDelete: (id: string) => void
 }) {
@@ -361,11 +399,11 @@ function PlaylistCard({ playlist, onClick, onDelete }: {
   )
 }
 
-// ─── Playback Bar (retractable, compact) ──────────────────────────────
+// ─── Improved Playback Bar with Lyrics Panel ──────────────────────────
 
 function PlaybackBar({
   currentTrack, isPlaying, isShuffle, isRepeat, volume, currentTime, duration,
-  likedTracks, queue, showQueue, showLyrics,
+  likedTracks, queue, showQueue, showLyrics, lyrics,
   onTogglePlay, onSkipNext, onSkipPrevious, onToggleShuffle, onToggleRepeat,
   onSeek, onVolumeChange, onToggleLike, onToggleQueue, onToggleLyrics,
   onRemoveFromQueue, onPlayFromQueue
@@ -494,6 +532,7 @@ function PlaybackBar({
               </div>
             </div>
 
+            {/* Queue Panel */}
             <AnimatePresence>
               {showQueue && (
                 <motion.div
@@ -533,6 +572,32 @@ function PlaybackBar({
                         ))}
                       </div>
                     )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Lyrics Panel */}
+            <AnimatePresence>
+              {showLyrics && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-t border-[#3dba6f]/8 bg-[#0b1810]/95 backdrop-blur-xl overflow-hidden"
+                >
+                  <div className="p-4 max-h-96 overflow-y-auto">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs font-semibold text-[#e8f5ec]">Lyrics</h3>
+                      {currentTrack && (
+                        <p className="text-[10px] text-[#4a7a5a]">{currentTrack.title} · {currentTrack.artist}</p>
+                      )}
+                    </div>
+                    <div className="prose prose-sm prose-invert max-w-none">
+                      <pre className="font-mono text-xs text-[#c0e0ca] whitespace-pre-wrap font-sans leading-relaxed">
+                        {lyrics || "Loading lyrics..."}
+                      </pre>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -612,6 +677,7 @@ export default function Player() {
   const [queue, setQueue] = useState<Track[]>([])
   const [showQueue, setShowQueue] = useState(false)
   const [showLyrics, setShowLyrics] = useState(false)
+  const [lyrics, setLyrics] = useState<string>("")
 
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [playlistsLoading, setPlaylistsLoading] = useState(false)
@@ -722,6 +788,21 @@ export default function Player() {
     if (view === "garden") fetchPlaylists()
   }, [view, userId, fetchPlaylists])
 
+  // Fetch lyrics when current track changes
+  useEffect(() => {
+    if (!currentTrack) {
+      setLyrics("")
+      return
+    }
+    let cancelled = false
+    fetchLyrics(currentTrack).then(text => {
+      if (!cancelled) setLyrics(text)
+    }).catch(() => {
+      if (!cancelled) setLyrics("Lyrics not available for this track.")
+    })
+    return () => { cancelled = true }
+  }, [currentTrack])
+
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
@@ -823,6 +904,7 @@ export default function Player() {
   const addToQueue = useCallback((track: Track) => {
     setQueue((q) => [...q, track])
     setShowQueue(true)
+    setShowLyrics(false) // close lyrics when opening queue
   }, [])
 
   const removeFromQueue = useCallback((i: number) => {
@@ -895,12 +977,12 @@ export default function Player() {
 
   const toggleQueue = useCallback(() => {
     setShowQueue((q) => !q)
-    setShowLyrics(false)
+    setShowLyrics(false) // ensure lyrics closed
   }, [])
 
   const toggleLyrics = useCallback(() => {
     setShowLyrics((l) => !l)
-    setShowQueue(false)
+    setShowQueue(false) // ensure queue closed
   }, [])
 
   const createPlaylist = async () => {
@@ -1027,8 +1109,8 @@ export default function Player() {
           </nav>
         </aside>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
+        {/* Main content with bottom padding to avoid player overlap */}
+        <main className="flex-1 overflow-y-auto pb-28">
           {/* Header with search and account */}
           <header className="sticky top-0 z-20 bg-[#0b1810]/90 backdrop-blur-xl border-b border-[#3dba6f]/8 px-6 py-3 flex items-center justify-between">
             <div className="relative w-80">
@@ -1422,7 +1504,8 @@ export default function Player() {
               </div>
             )}
           </div>
-          <div className="h-5" />
+          {/* Extra spacer for scroll */}
+          <div className="h-2" />
         </main>
       </div>
 
@@ -1438,6 +1521,7 @@ export default function Player() {
         queue={queue}
         showQueue={showQueue}
         showLyrics={showLyrics}
+        lyrics={lyrics}
         onTogglePlay={() => setIsPlaying((p) => !p)}
         onSkipNext={skipToNext}
         onSkipPrevious={skipToPrevious}

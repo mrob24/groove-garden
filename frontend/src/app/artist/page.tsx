@@ -115,7 +115,7 @@ function CoverUpload({ file, preview, onChange, required, label = 'Cover art' }:
           <>
             <img src={preview} alt="cover" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-[#e8f5ec] truncate">{file?.name}</p>
+              <p className="text-sm text-[#e8f5ec] truncate">{file?.name || 'Current photo'}</p>
               <p className="text-xs text-[#4a7a5a] mt-0.5">Click to change</p>
             </div>
             <Check size={14} className="text-[#3dba6f] flex-shrink-0" />
@@ -404,8 +404,10 @@ export default function ArtistStudio() {
 
   // Profile edit state
   const [editProfile, setEditProfile] = useState(false)
-  const [profileForm, setProfileForm] = useState({ display_name: '', bio: '', genre: '', country: '' })
+  const [profileForm, setProfileForm] = useState({ display_name: '', bio: '', genre: '', country: '', avatar_url: '' })
   const [profileSaving, setProfileSaving] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   useEffect(() => {
     const user = localStorage.getItem('gg_user')
@@ -434,7 +436,13 @@ export default function ArtistStudio() {
     }
     if (pR.data) {
       setProfile(pR.data)
-      setProfileForm({ display_name: pR.data.display_name, bio: pR.data.bio || '', genre: pR.data.genre || '', country: pR.data.country || '' })
+      setProfileForm({
+        display_name: pR.data.display_name,
+        bio: pR.data.bio || '',
+        genre: pR.data.genre || '',
+        country: pR.data.country || '',
+        avatar_url: pR.data.avatar_url || '',
+      })
     }
     setLoading(false)
   }
@@ -508,14 +516,31 @@ export default function ArtistStudio() {
 
   const handleSaveProfile = async () => {
     setProfileSaving(true)
-    const { error } = await supabase.from('artists').update(profileForm).eq('id', artistId)
-    if (!error) { setEditProfile(false); fetchAll() }
-    setProfileSaving(false)
+    try {
+      const updatedProfile: any = { ...profileForm }
+      if (avatarFile) {
+        const ts = Date.now()
+        updatedProfile.avatar_url = await uploadFile(avatarFile, 'tracks', `avatars/${artistId}/${ts}-${avatarFile.name}`)
+      }
+      const { error } = await supabase.from('artists').update(updatedProfile).eq('id', artistId)
+      if (!error) {
+        setEditProfile(false)
+        setAvatarFile(null)
+        setAvatarPreview(null)
+        fetchAll()
+      }
+    } catch (e: any) {
+      console.error(e)
+    } finally {
+      setProfileSaving(false)
+    }
   }
 
   const totalPlays = tracks.reduce((sum, t) => sum + (t.play_count || 0), 0)
   const topTrack = tracks.length ? [...tracks].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))[0] : null
   const recentTracks = [...tracks].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4)
+  const albumCount = albums.length
+  const totalTracks = tracks.length
 
   // ─── Render ─────────────────────────────────────────────────────────
 
@@ -585,10 +610,14 @@ export default function ArtistStudio() {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#3dba6f]/5 transition-colors border-none cursor-pointer"
             >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#1e5c38] to-[#3dba6f] flex items-center justify-center">
-                <span className="text-[#071008] text-[11px] font-bold">
-                  {profile?.display_name?.[0]?.toUpperCase() || 'A'}
-                </span>
+              <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-[#1e5c38] to-[#3dba6f] flex items-center justify-center">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.display_name || 'Artist avatar'} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[#071008] text-[11px] font-bold">
+                    {profile?.display_name?.[0]?.toUpperCase() || 'A'}
+                  </span>
+                )}
               </div>
               <span className="text-xs text-[#e8f5ec] hidden sm:inline">{profile?.display_name?.split(' ')[0]}</span>
               <ChevronDown size={12} className="text-[#4a7a5a]" />
@@ -650,6 +679,143 @@ export default function ArtistStudio() {
                     </button>
                   </div>
                 </div>
+
+                <div className="grid gap-5 xl:grid-cols-[1.65fr_1fr]">
+                  <div className={`${t.cardGlow} p-6 bg-gradient-to-br from-[#102214] via-[#0b180f] to-[#07100a]`}>
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-24 h-24 rounded-[28px] bg-[#132d1b] overflow-hidden flex items-center justify-center shadow-lg shadow-[#3dba6f]/10">
+                          {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt={profile.display_name || 'Artist avatar'} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-4xl font-bold text-[#e8f5ec]">
+                              {profile?.display_name?.[0]?.toUpperCase() || 'A'}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.35em] text-[#3dba6f]/80 mb-2">Artist Profile</p>
+                          <h2 className="text-3xl sm:text-4xl font-semibold text-[#e8f5ec] leading-tight">
+                            {profile?.display_name || 'Your artist name'}
+                          </h2>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#a7d9ac]">
+                            {profile?.verified && <span className="px-2 py-1 rounded-full bg-[#3dba6f]/10 text-[#3dba6f]">Verified artist</span>}
+                            {profile?.genre && <span className="px-2 py-1 rounded-full bg-[#3dba6f]/10 border border-[#3dba6f]/10">{profile.genre}</span>}
+                            {profile?.country && <span className="px-2 py-1 rounded-full bg-[#3dba6f]/10 border border-[#3dba6f]/10">{profile.country}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <button onClick={() => setEditProfile(true)} className={`${t.btnGhostSmall} rounded-full`}>
+                        <Edit2 size={12} /> Edit profile
+                      </button>
+                    </div>
+
+                    <p className="mt-6 text-sm leading-7 text-[#c4dec2] max-w-2xl">
+                      {profile?.bio || 'Share your story, influences, and what makes your sound special. Fans discover artists through the story behind the music.'}
+                    </p>
+
+                    <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                      {[
+                        { label: 'Plays', value: totalPlays.toLocaleString() },
+                        { label: 'Listeners', value: (stats?.monthly_listeners || 0).toLocaleString() },
+                        { label: 'Tracks', value: totalTracks.toString() },
+                        { label: 'Albums', value: albumCount.toString() },
+                      ].map(item => (
+                        <div key={item.label} className="rounded-2xl bg-[#0a150d]/70 p-4 border border-[#3dba6f]/10">
+                          <p className="text-xs uppercase tracking-[0.2em] text-[#4a7a5a]">{item.label}</p>
+                          <p className="mt-3 text-xl font-semibold text-[#e8f5ec]">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className={`${t.card} p-5`}>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.35em] text-[#3dba6f]/80">Artist details</p>
+                          <h3 className="text-base font-semibold text-[#e8f5ec] mt-2">Profile at a glance</h3>
+                        </div>
+                        <button onClick={() => setEditProfile(true)} className={t.btnGhostSmall}>Edit</button>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {[
+                          { label: 'Display name', value: profile?.display_name || 'Not set' },
+                          { label: 'Genre', value: profile?.genre || 'Not set' },
+                          { label: 'Country', value: profile?.country || 'Not set' },
+                        ].map(item => (
+                          <div key={item.label} className="rounded-2xl bg-[#0b1f13] p-4 border border-[#3dba6f]/10">
+                            <p className="text-[10px] uppercase tracking-[0.25em] text-[#4a7a5a]">{item.label}</p>
+                            <p className="mt-2 text-sm text-[#e8f5ec]">{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={`${t.card} p-5`}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Users size={14} className="text-[#3dba6f]" />
+                        <p className="text-xs uppercase tracking-[0.35em] text-[#3dba6f]/80">Fan engagement</p>
+                      </div>
+                      <div className="space-y-3 text-sm text-[#4a7a5a]">
+                        <div className="rounded-2xl bg-[#0b1f13] p-4 border border-[#3dba6f]/10">
+                          <p className="text-[10px] uppercase tracking-[0.25em] text-[#4a7a5a]">Recent listeners</p>
+                          <p className="mt-2 text-sm text-[#e8f5ec]">{(stats?.monthly_listeners || 0).toLocaleString()} unique listeners this month</p>
+                        </div>
+                        <div className="rounded-2xl bg-[#0b1f13] p-4 border border-[#3dba6f]/10">
+                          <p className="text-[10px] uppercase tracking-[0.25em] text-[#4a7a5a]">Fan sentiment</p>
+                          <p className="mt-2 text-sm text-[#e8f5ec]">{(stats?.likes_growth || 0) >= 0 ? 'Growing' : 'Stabilizing'} popularity over the last 30 days.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {editProfile && (
+                  <div className={`${t.cardGlow} p-5 space-y-4`}>
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] text-[#3dba6f]/80">Profile editor</p>
+                        <h3 className="text-lg font-semibold text-[#e8f5ec] mt-1">Update your artist profile</h3>
+                      </div>
+                      <button onClick={() => { setEditProfile(false); setAvatarFile(null); setAvatarPreview(null) }} className="text-sm text-[#4a7a5a] hover:text-[#e8f5ec] transition-colors bg-transparent border-none cursor-pointer">Cancel</button>
+                    </div>
+                    <div className="grid gap-4">
+                      <Field label="Profile photo">
+                        <CoverUpload
+                          file={avatarFile}
+                          preview={avatarPreview || profile?.avatar_url || null}
+                          onChange={file => {
+                            setAvatarFile(file)
+                            setAvatarPreview(file ? URL.createObjectURL(file) : null)
+                          }}
+                          label="Profile photo"
+                        />
+                      </Field>
+                      <Field label="Artist name">
+                        <input value={profileForm.display_name} onChange={e => setProfileForm(p => ({ ...p, display_name: e.target.value }))} className={t.input} />
+                      </Field>
+                      <Field label="Genre">
+                        <input value={profileForm.genre} onChange={e => setProfileForm(p => ({ ...p, genre: e.target.value }))} className={t.input} />
+                      </Field>
+                      <Field label="Country">
+                        <input value={profileForm.country} onChange={e => setProfileForm(p => ({ ...p, country: e.target.value }))} className={t.input} />
+                      </Field>
+                      <Field label="Bio">
+                        <textarea value={profileForm.bio} onChange={e => setProfileForm(p => ({ ...p, bio: e.target.value }))} rows={4} className={`${t.input} resize-none`} />
+                      </Field>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <button onClick={handleSaveProfile} disabled={profileSaving} className={`${t.btnPrimary} rounded-lg`}>
+                        {profileSaving ? <Spinner sm /> : 'Save profile'}
+                      </button>
+                      <button onClick={() => setEditProfile(false)} className={`${t.btnGhost} rounded-lg`}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
