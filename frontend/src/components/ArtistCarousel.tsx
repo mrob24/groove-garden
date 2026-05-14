@@ -66,17 +66,17 @@ const GAP = 16
 const SPEED = 0.5
 
 // Calculate card distance from center for sophisticated fade
-const calculateCardOpacity = (dist, maxDist) => {
+const calculateCardOpacity = (dist: number, maxDist: number): number => {
   const normalized = Math.min(dist / maxDist, 1)
   return 1 - normalized * 0.8 // Fades from 1 to 0.2
 }
 
 export default function ArtistCarousel() {
-  const [activeIndex, setActiveIndex] = useState(0)
-  const scrollRef = useRef(null)
-  const animFrameRef = useRef(null)
-  const pausedRef = useRef(false)
-  const posRef = useRef(0)
+  const [activeIndex, setActiveIndex] = useState<number>(0)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const animFrameRef = useRef<number | null>(null)
+  const pausedRef = useRef<boolean>(false)
+  const posRef = useRef<number>(0)
 
   useEffect(() => {
     const container = scrollRef.current
@@ -102,7 +102,8 @@ export default function ArtistCarousel() {
         let closest = 0
         let minDist = Infinity
         cards.forEach((card, i) => {
-          const cardCenter = card.offsetLeft + card.offsetWidth / 2
+          const htmlCard = card as HTMLElement
+          const cardCenter = htmlCard.offsetLeft + htmlCard.offsetWidth / 2
           const dist = Math.abs(containerCenter - cardCenter)
           if (dist < minDist) {
             minDist = dist
@@ -116,7 +117,11 @@ export default function ArtistCarousel() {
     }
 
     animFrameRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(animFrameRef.current)
+    return () => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current)
+      }
+    }
   }, [])
 
   return (

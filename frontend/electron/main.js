@@ -2,12 +2,14 @@ const { app, BrowserWindow } = require('electron')
 const { spawn } = require('child_process')
 const waitOn = require('wait-on')
 const path = require('path')
+const isDev = require('electron-is-dev')
 
 let nextProcess = null
 
 async function createWindow() {
   // Levanta el servidor Next.js
-  nextProcess = spawn('node', [path.join(__dirname, '../node_modules/.bin/next'), 'start'], {
+  const nextCommand = isDev ? 'dev' : 'start'
+  nextProcess = spawn('node', [path.join(__dirname, '../node_modules/.bin/next'), nextCommand], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, PORT: '3000' },
     shell: true
