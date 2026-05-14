@@ -136,4 +136,5 @@ export async function GET(req: NextRequest) {
     weekly_growth: Math.round(weekly_growth * 10) / 10,
     revenue: 0 // Revenue tracking not yet implemented
   }, { status: 200 })
+
 }

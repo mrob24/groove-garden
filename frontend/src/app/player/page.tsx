@@ -684,6 +684,7 @@ export default function Player() {
   const [openPlaylist, setOpenPlaylist] = useState<Playlist | null>(null)
   const [showNewPlaylist, setShowNewPlaylist] = useState(false)
   const [newPlaylistName, setNewPlaylistName] = useState("")
+  const [newPlaylistDescription, setNewPlaylistDescription] = useState("")
   const [creatingPlaylist, setCreatingPlaylist] = useState(false)
   const [gardenTab, setGardenTab] = useState<"liked" | "playlists">("liked")
   const [stats, setStats] = useState<Stats>({
@@ -804,55 +805,79 @@ export default function Player() {
   }, [currentTrack])
 
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
+  const audio = audioRef.current
+  if (!audio) return
 
-    const onTime = () => setCurrentTime(audio.currentTime)
-    const onDuration = () => setDuration(audio.duration)
-    const onEnded = () => {
-      if (userId && currentTrack) {
-        fetch("/api/listen", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: userId,
-            track_id: currentTrack.id,
-            duration_listened: Math.floor(Date.now() / 1000) - listenStart,
-            track_duration: currentTrack.duration,
-            source: "player",
-          }),
-        })
+  const onTime = () => setCurrentTime(audio.currentTime)
+  const onDuration = () => setDuration(audio.duration)
+  
+  const onEnded = () => {
+    if (userId && currentTrack) {
+      // Calcular cuántos segundos escuchó realmente
+      const listenedSeconds = Math.floor(Date.now() / 1000) - listenStart
+      // Calcular el porcentaje de completado (0 a 1)
+      const completionRate = Math.min(listenedSeconds / currentTrack.duration, 1)
+    
+      console.log('🎵 Track finished:', {
+        track: currentTrack.title,
+        listened: listenedSeconds,
+        total: currentTrack.duration,
+        completion: completionRate
+      })
+    
+      fetch("/api/listen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          track_id: currentTrack.id,
+          duration_listened: listenedSeconds,
+          track_duration: currentTrack.duration,
+          completion_rate: completionRate,
+          source: "player",
+        }),
+      })
+      .then(res => res.json())
+      .then(data => console.log('✅ Listen saved:', data))
+      .catch(err => console.error('❌ Listen error:', err))
+    }
+
+  // El resto del código para next track, repeat, etc.
+    if (queue.length > 0) {
+      const [next, ...rest] = queue
+      setQueue(rest)
+      setCurrentTrack(next)
+      setIsPlaying(true)
+    } else if (isRepeat) {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0
+        audioRef.current.play()
       }
-      if (queue.length > 0) {
-        const [next, ...rest] = queue
-        setQueue(rest)
-        setCurrentTrack(next)
-        setIsPlaying(true)
-      } else if (isRepeat) {
-        audio.currentTime = 0
-        audio.play()
-      } else {
-        const idx = tracks.findIndex((t) => t.id === currentTrack?.id)
-        const next = isShuffle ? Math.floor(Math.random() * tracks.length) : (idx + 1) % tracks.length
+    } else {
+      const idx = tracks.findIndex((t) => t.id === currentTrack?.id)
+      const next = isShuffle ? Math.floor(Math.random() * tracks.length) : (idx + 1) % tracks.length
+      if (tracks[next]) {
         setCurrentTrack(tracks[next])
       }
     }
+  }
 
-    audio.addEventListener("timeupdate", onTime)
-    audio.addEventListener("durationchange", onDuration)
-    audio.addEventListener("ended", onEnded)
-    return () => {
-      audio.removeEventListener("timeupdate", onTime)
-      audio.removeEventListener("durationchange", onDuration)
-      audio.removeEventListener("ended", onEnded)
-    }
-  }, [currentTrack, tracks, queue, isRepeat, isShuffle, userId, listenStart])
+  audio.addEventListener("timeupdate", onTime)
+  audio.addEventListener("durationchange", onDuration)
+  audio.addEventListener("ended", onEnded)
+
+  return () => {
+    audio.removeEventListener("timeupdate", onTime)
+    audio.removeEventListener("durationchange", onDuration)
+    audio.removeEventListener("ended", onEnded)
+  }
+}, [currentTrack, tracks, queue, isRepeat, isShuffle, userId, listenStart])
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio || !currentTrack?.url) return
     audio.src = currentTrack.url
-    setListenStart(Math.floor(Date.now() / 1000))
+    setListenStart(Math.floor(Date.now() / 1000))  // ← Esta línea está bien
     if (isPlaying) audio.play().catch(() => setIsPlaying(false))
   }, [currentTrack])
 
@@ -986,17 +1011,42 @@ export default function Player() {
   }, [])
 
   const createPlaylist = async () => {
-    if (!newPlaylistName.trim() || !userId) return
+    if (!newPlaylistName.trim() || !userId) {
+      alert('El nombre de la playlist es requerido')
+      return
+    }
+  
     setCreatingPlaylist(true)
-    await fetch("/api/playlists", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "create", user_id: userId, name: newPlaylistName.trim() }),
-    })
-    setNewPlaylistName("")
-    setShowNewPlaylist(false)
-    setCreatingPlaylist(false)
-    fetchPlaylists()
+  
+    try {
+      const response = await fetch("/api/playlists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          user_id: userId, 
+          name: newPlaylistName.trim(),
+          description: newPlaylistDescription.trim() || null  // ← Enviar descripción
+        }),
+      })
+    
+      const data = await response.json()
+    
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al crear playlist')
+      }
+    
+      // Resetear formulario
+      setNewPlaylistName("")
+      setNewPlaylistDescription("")  // ← Resetear descripción
+      setShowNewPlaylist(false)
+      await fetchPlaylists()
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
+      console.error('Error:', errorMessage)
+      alert(errorMessage)
+    } finally {
+      setCreatingPlaylist(false)
+    }
   }
 
   const deletePlaylist = async (playlistId: string) => {
@@ -1299,16 +1349,60 @@ export default function Player() {
                 </div>
 
                 {showNewPlaylist && !openPlaylist && (
-                  <div className="flex items-center gap-2 mb-5 p-3 bg-[#0f1f14] border border-[#3dba6f]/12 rounded-xl">
-                    <input autoFocus type="text" placeholder="Playlist name…" value={newPlaylistName} onChange={(e) => setNewPlaylistName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && createPlaylist()} className="flex-1 bg-[#0a150d] border border-[#3dba6f]/15 rounded-lg px-3 py-1.5 text-sm text-[#e8f5ec] placeholder-[#4a7a5a] outline-none focus:border-[#3dba6f]/30 transition-colors" />
-                    <button onClick={createPlaylist} disabled={!newPlaylistName.trim() || creatingPlaylist} className="px-3 py-1.5 bg-[#3dba6f] text-[#071008] rounded-lg text-xs font-semibold hover:bg-[#4ecf80] transition-colors disabled:opacity-50 cursor-pointer border-none">
-                      {creatingPlaylist ? "…" : "Create"}
-                    </button>
-                    <button onClick={() => { setShowNewPlaylist(false); setNewPlaylistName("") }} className="text-[#4a7a5a] hover:text-[#e8f5ec] transition-colors bg-transparent border-none cursor-pointer">
-                      <X size={14} />
-                    </button>
-                  </div>
-                )}
+                  <div className="mb-5 p-4 bg-[#0f1f14] border border-[#3dba6f]/12 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-[#e8f5ec]">Create New Playlist</h3>
+                        <button 
+                          onClick={() => { 
+                            setShowNewPlaylist(false); 
+                            setNewPlaylistName(""); 
+                            setNewPlaylistDescription(""); 
+                                            }} 
+                          className="text-[#4a7a5a] hover:text-[#e8f5ec] transition-colors bg-transparent border-none cursor-pointer"
+                                          >
+                          <X size={14} />
+                        </button>
+                      </div>
+                      
+                      <input 
+                        autoFocus 
+                        type="text" 
+                        placeholder="Playlist name *" 
+                        value={newPlaylistName} 
+                        onChange={(e) => setNewPlaylistName(e.target.value)} 
+                        onKeyDown={(e) => e.key === "Enter" && createPlaylist()} 
+                        className="w-full bg-[#0a150d] border border-[#3dba6f]/15 rounded-lg px-3 py-2 text-sm text-[#e8f5ec] placeholder-[#4a7a5a] outline-none focus:border-[#3dba6f]/30 transition-colors" 
+                      />
+                      
+                      <textarea
+                        placeholder="Description (optional)"
+                        value={newPlaylistDescription}
+                        onChange={(e) => setNewPlaylistDescription(e.target.value)}
+                        rows={2}
+                        className="w-full bg-[#0a150d] border border-[#3dba6f]/15 rounded-lg px-3 py-2 text-sm text-[#e8f5ec] placeholder-[#4a7a5a] outline-none focus:border-[#3dba6f]/30 transition-colors resize-none"
+                      />
+                      
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={createPlaylist} 
+                          disabled={!newPlaylistName.trim() || creatingPlaylist} 
+                          className="flex-1 px-3 py-2 bg-[#3dba6f] text-[#071008] rounded-lg text-xs font-semibold hover:bg-[#4ecf80] transition-colors disabled:opacity-50 cursor-pointer border-none"
+                        >
+                          {creatingPlaylist ? "Creating..." : "Create Playlist"}
+                        </button>
+                        <button 
+                          onClick={() => { 
+                            setShowNewPlaylist(false); 
+                            setNewPlaylistName(""); 
+                            setNewPlaylistDescription(""); 
+                          }} 
+                          className="px-3 py-2 bg-[#0a150d] border border-[#3dba6f]/15 rounded-lg text-xs text-[#8ab89a] hover:border-[#3dba6f]/30 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                 {openPlaylist ? (
                   <div>
