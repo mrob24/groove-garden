@@ -424,7 +424,7 @@ function PlaybackBar({
                   <button className="text-[#4a7a5a] hover:text-[#8ab89a] transition-colors">
                     {volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
                   </button>
-                  <div className="absolute bottom-10 right-0 hidden group-hover:block bg-[#0f1f14] border border-[#3dba6f]/20 rounded-lg p-2 shadow-xl w-24">
+                  <div className="absolute bottom-10 right-0 hidden group-hover:block bg-[#0f1f14] border border-[#3dba6f]/20 rounded-lg p-2 shadow-xl w-24 z-50 overflow-visible">
                     <input
                       type="range"
                       min="0"
@@ -954,6 +954,32 @@ export default function Player() {
         }
         ::-webkit-scrollbar-thumb:hover {
           background: #254d35;
+        }
+        /* Improved range styling to avoid visual clipping of the thumb */
+        input[type="range"] {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 6px;
+          background: rgba(61,186,111,0.18);
+          border-radius: 9999px;
+        }
+        input[type="range"]:focus { outline: none; }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 14px;
+          height: 14px;
+          border-radius: 9999px;
+          background: #3dba6f;
+          box-shadow: 0 0 0 4px rgba(61,186,111,0.12);
+          margin-top: -4px;
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          border-radius: 9999px;
+          background: #3dba6f;
+          border: none;
+          box-shadow: 0 0 0 4px rgba(61,186,111,0.12);
         }
       `}</style>
 
