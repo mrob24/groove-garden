@@ -196,7 +196,7 @@ function ContextMenu({
             <ChevronRight size={10} className={`ml-auto transition-transform ${showPlaylists ? 'rotate-90' : ''}`} />
           </button>
           
-          {showPlaylists && playlists.map(pl => (
+          {showPlaylists && playlists.map((pl: Playlist) => (
             <button
               key={pl.id}
               onClick={() => { onAddToPlaylist(pl.id); onClose() }}
